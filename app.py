@@ -3,6 +3,14 @@ from dotenv import load_dotenv
 from google import genai
 import os
 load_dotenv()
+import pypdf
+
+def extract_text_from_pdf(file):
+    reader = pypdf.PdfReader(file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() + "\n"
+    return text
 
 def get_ai_response(file_content):
     client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -55,6 +63,11 @@ def get_ai_response(file_content):
 
     Now use this format for the uploaded resume:
 
+    Its not necessary to follow the examples exactly, but ensure that the questions are relevant to the skills and experiences listed in the resume.
+    you are great at generating interview questions based on resumes.
+    so analyze the resume content and generate questions accordingly.
+    if you find nothing relevant in the resume, then return commonly asked interview questions for the role mentioned in the resume.
+    if role is not mentioned, then return commonly asked interview questions for software developer role entry level.
     Resume:
     {file_content}
 
@@ -77,12 +90,15 @@ with st.sidebar:
     if uploaded_file is not None:
         st.success("File uploaded successfully!")
         st.write("File Name:", uploaded_file.name)
-        file_content = uploaded_file.read()
+        try:
+            file_content = extract_text_from_pdf(uploaded_file)
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
     button=st.button("Generate Interview Questions")
         
         
 if button:
     with st.spinner("Generating questions..."):
-        response = get_ai_response(file_content.decode('utf-8', errors='ignore'))
+        response = get_ai_response(file_content)
         st.write(response)
         st.success("Questions generated successfully!")
